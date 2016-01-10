@@ -32,6 +32,7 @@ class Window(QtGui.QWidget):
         self.resize(self.height,self.width)
         self.center()
         self.show()
+        self.raise_()
 
     def center(self):
 
