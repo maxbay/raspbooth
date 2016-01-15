@@ -3,19 +3,21 @@
 import sys
 import os
 from PyQt4 import QtGui
+import inspect
 sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
 from capture import Capture
 
+
 class Window(QtGui.QWidget):
     def __init__(self):
-        super(Window,self).__init__()
+        super(Window, self).__init__()
 
-        self.initUI()
-
-    def initUI(self):
         self.width =  500
         self.height = 500
         self.offset = 10
+        self.captureBtn()
+
+    def captureBtn(self):
 
         self.setWindowTitle('Control Panel')
 
@@ -34,8 +36,10 @@ class Window(QtGui.QWidget):
         self.show()
         self.raise_()
 
-    def center(self):
+    def saveBtn(self):
+        pass
 
+    def center(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)

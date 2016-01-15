@@ -3,18 +3,25 @@ import os
 import time
 import cv2
 import numpy as np
+import gtk, pygtk
 
 class Capture():
+
     def __init__(self):
+
         self.c = cv2.VideoCapture(0)
+        self.dsp_w = gtk.gdk.screen_width()
+        self.dsp_h = gtk.gdk.screen_height()
+
 
     def startCapture(self):
-
-        self.capturing = True #fall into while loop
         cap = self.c
 
+        self.capturing = True #fall into while loop
+        self.bkrnd = np.zeros(shape=(self.dsp_h,self.dsp_w)).astype(np.uint8)
+
         DELAY = 6
-        FAUX_FLASH = 30
+        FAUX_FLASH = 50
         epoch_time = np.int(time.time())
 
         snap1 = epoch_time + DELAY + 5
@@ -34,9 +41,11 @@ class Capture():
             ret, frame = cap.read()
 
             gray = Capture.cropVideo(frame) # crops video into 3:4 ratio
-            gray = cv2.cvtColor(gray,cv2.COLOR_BGR2GRAY) # converts to gray
-            gray = cv2.flip(gray,1) # flips to create mirrior image
+            gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) # converts to gray
+            gray = cv2.flip(gray, 1) # flips to create mirrior image
             gray_copy = gray # unmanipulated copy for writing to disk
+            gray = Capture.fullScreen(gray, self.dsp_w, self.dsp_h, self.bkrnd)
+
 
             FONT = cv2.FONT_HERSHEY_COMPLEX # font
             SCALE = 2 # pt size
@@ -71,19 +80,19 @@ class Capture():
                     if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
                         self.capturing = False
 
-                    print(str(snap_count))
+                    print("Snap # = {0}".format(str(snap_count + 1)))
 
             mid_x, mid_y = Capture.findCenter(gray,text,FONT,SCALE,THICKNESS) # find x, y values in image to display text
             cv2.putText(gray,text,(mid_x,mid_y),FONT,SCALE,(255,255,255),THICKNESS) # insert text at x, y
-            cv2.imshow("CaptureFrame", gray) # display image with text
+            cv2.namedWindow("Image",cv2.cv.CV_WINDOW_NORMAL)
+            cv2.resizeWindow("Image",self.dsp_w,self.dsp_h)
+            #cv2.setWindowProperty("Image", cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+            cv2.imshow("Image", gray) # display image with text
             cv2.waitKey(5)
 
 
 
         cv2.destroyAllWindows() # exit from display window
-
-    def printBtn(self):
-        print "Pressed Btn"
 
     @staticmethod
     def findCenter(array, text, FONT, SCALE, THICKNESS): # values for x, y such that text is centered
@@ -99,21 +108,35 @@ class Capture():
     @staticmethod
     def cropVideo(array): #crops video to 3:4 ratio
 
-        width = np.int(np.size(array[0,:])/3)
-        height  = np.int(np.size(array[:,0])/3)
-        target_width = np.int((height * .75))
-        start  = np.int((width/2) - (target_width/2))
-        end    = np.int((width/2) + (target_width/2))
+        w = np.int(np.shape(array)[1])
+        h = np.int(np.shape(array)[0])
+        target_w = np.int((h * .75))
+        start  = np.int((w/2) - (target_w/2))
+        end    = np.int((w/2) + (target_w/2))
 
         array = array[:,start:end]
 
         return array
 
-    """
-    def quitCapture(self):
-        print "pressed Quit"
-        cap = self.c
-        cv2.destroyAllWindows()
-        cap.release()
-        QtCore.QCoreApplication.quit()
-        """
+    @staticmethod
+    def fullScreen(array, dsp_w, dsp_h, bkrnd):
+
+        w = np.int(np.shape(array)[1])
+        h  = np.int(np.shape(array)[0])
+
+        ratio = float(dsp_h) / float(h)
+
+        x_offset = np.int(np.round(np.shape(bkrnd)[1]/2,0)) - np.int(np.round(w/2,0)) - 100
+
+        array = cv2.resize(array, (0, 0), fx = ratio, fy = ratio, interpolation = cv2.INTER_LINEAR)
+
+        w  = np.int(np.shape(array)[1])
+        h  = np.int(np.shape(array)[0])
+
+
+        bkrnd[0:h, x_offset:x_offset + w] = array
+        array = bkrnd
+
+        return array
+
+
