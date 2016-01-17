@@ -87,11 +87,11 @@ class Capture(QtGui.QWidget):
         self.dsp_h = gtk.gdk.screen_height()
         self.bkrnd = np.zeros(shape=(self.dsp_h,self.dsp_w,3)).astype(np.uint8)
 
-        self.DELAY = 2
+        self.DELAY = 6
         self.FAUX_FLASH = 50
         self.epoch_time = np.int(time.time())
 
-        self.snap1 = self.epoch_time + self.DELAY + 0
+        self.snap1 = self.epoch_time + self.DELAY + 5
         self.snap2 = self.snap1 + self.DELAY
         self.snap3 = self.snap2 + self.DELAY
         self.snap4 = self.snap3 + self.DELAY
