@@ -1,103 +1,134 @@
 #!/usr/local/bin/python
+
+import sys
 import os
 import time
 import cv2
 import numpy as np
-import gtk, pygtk
+from PyQt4 import QtGui, QtCore
+import gtk, pygtk # pygtk is a gtk dependency
 
-class Capture():
-
+class Capture(QtGui.QWidget):
     def __init__(self):
+        super(Capture, self).__init__()
 
-        self.c = cv2.VideoCapture(0)
-        self.dsp_w = gtk.gdk.screen_width()
-        self.dsp_h = gtk.gdk.screen_height()
+        #video containing widget layout params
+        self.video_frame = QtGui.QLabel()
+        lay = QtGui.QVBoxLayout()
+        lay.addWidget(self.video_frame)
+        self.showMaximized()
+        self.setLayout(lay)
+        self.raise_()
 
+        self.capturing = False
+
+    def nextFrameSlot(self):
+
+        ret, frame = self.cap.read()
+        frame = Capture.cropVideo(frame).astype(np.uint8)
+        frame = Capture.cvt3ChanGray(frame).astype(np.uint8)
+        frame = cv2.flip(frame, 1).astype(np.uint8) # flips to create mirrior image
+        frame_copy = frame.astype(np.uint8) # unmanipulated copy for writing to disk
+        frame = Capture.fullScreen(frame, self.dsp_w, self.dsp_h, self.bkrnd).astype(np.uint8)
+
+        FONT = cv2.FONT_HERSHEY_COMPLEX # font
+        SCALE = 2 # pt size
+        THICKNESS = 5 # boldness factor
+
+        cur_time = time.time() # time of instance, float
+        cur_time_int = int(cur_time) # instance of time, discretized
+
+        if cur_time > self.snap_lst[self.snap_count]: # advances snap count if current time > end of previous snap period
+            self.snap_count += 1
+
+
+        remaining_float = self.snap_lst[self.snap_count] - cur_time - 1 # time remaining in snap period, used for flash taking snap
+        remaining = self.snap_lst[self.snap_count] - cur_time_int - 1 # int of time remaining, used for display
+
+        if remaining <= 1: # displays remaining time on screen, but last two seconds "SMILE!" is displayed
+            text = "SMILE!"
+        else:
+            text = str(remaining)
+
+        if remaining_float > 0 and remaining_float < .25: # increase image values to make fake flash
+            frame = np.array(np.add(frame.astype(np.uint8),self.FAUX_FLASH)).astype(np.uint8)
+
+            if self.take_snap[self.snap_count]: # check if picture for this snap period needs to be taken, if so...
+
+                if not os.path.exists(self.snaps_dir): # make dir for all 4 pictures if it has not been created yet
+                    os.makedirs(self.snaps_dir)
+                file_name = os.path.join(self.snaps_dir,"test_image{0}.tif".format(str(self.snap_count + 1)))
+                cv2.imwrite(file_name,frame_copy) # write picture to disk
+                self.take_snap[self.snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
+                print("Snap {0}".format(str(self.snap_count)))
+
+                if self.snap_count == len(self.snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
+                    self.deleteLater()
+                    self.timer.stop()
+                    self.capturing = False
+                    sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
+                    from ui_windows import saveWindow
+                    self.hide()
+                    self.svw = saveWindow()
+
+
+        mid_x, mid_y = Capture.findCenter(frame,text,FONT,SCALE,THICKNESS) # find x, y values in image to display text
+        cv2.putText(frame,text,(mid_x,mid_y),FONT,SCALE,(255,255,255),THICKNESS) # insert text at x, y
+
+        img = QtGui.QImage(frame, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
+        pix = QtGui.QPixmap.fromImage(img)
+        self.video_frame.setPixmap(pix)
 
     def startCapture(self):
-        cap = self.c
+        self.fps = 24
+        self.cap = cv2.VideoCapture(0)
 
-        self.capturing = True #fall into while loop
-        self.bkrnd = np.zeros(shape=(self.dsp_h,self.dsp_w)).astype(np.uint8)
+        self.dsp_w = gtk.gdk.screen_width()
+        self.dsp_h = gtk.gdk.screen_height()
+        self.bkrnd = np.zeros(shape=(self.dsp_h,self.dsp_w,3)).astype(np.uint8)
 
-        DELAY = 6
-        FAUX_FLASH = 50
-        epoch_time = np.int(time.time())
+        self.DELAY = 2
+        self.FAUX_FLASH = 50
+        self.epoch_time = np.int(time.time())
 
-        snap1 = epoch_time + DELAY + 5
-        snap2 = snap1 + DELAY
-        snap3 = snap2 + DELAY
-        snap4 = snap3 + DELAY
-        snap_lst = [snap1, snap2, snap3, snap4]
-        take_snap = [True, True, True, True]
-        snap_count = 0
+        self.snap1 = self.epoch_time + self.DELAY + 0
+        self.snap2 = self.snap1 + self.DELAY
+        self.snap3 = self.snap2 + self.DELAY
+        self.snap4 = self.snap3 + self.DELAY
+        self.snap_lst = [self.snap1, self.snap2, self.snap3, self.snap4]
+        self.take_snap = [True, True, True, True]
+        self.snap_count = 0
 
         HOME_DIR = os.path.expanduser('~')
-        snaps_dir = os.path.join(HOME_DIR,'Desktop/tmp_photos',str(epoch_time))
+        self.snaps_dir = os.path.join(HOME_DIR,'Desktop/tmp_photos',str(self.epoch_time))
 
-        while(self.capturing):
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.nextFrameSlot)
+        self.timer.start(1000./self.fps)
 
-
-            ret, frame = cap.read()
-
-            gray = Capture.cropVideo(frame) # crops video into 3:4 ratio
-            gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) # converts to gray
-            gray = cv2.flip(gray, 1) # flips to create mirrior image
-            gray_copy = gray # unmanipulated copy for writing to disk
-            gray = Capture.fullScreen(gray, self.dsp_w, self.dsp_h, self.bkrnd)
-
-
-            FONT = cv2.FONT_HERSHEY_COMPLEX # font
-            SCALE = 2 # pt size
-            THICKNESS = 5 # boldness factor
-
-            cur_time = time.time() # time of instance, float
-            cur_time_int = int(cur_time) # instance of time, discretized
-
-            if cur_time > snap_lst[snap_count]: # advances snap count if current time > end of previous snap period
-                snap_count += 1
+    def startInit(self):
+        if not self.capturing:
+            self.capturing = True
+            self.startCapture()
+            self.show()
+        else:
+            print("Already capturing")
 
 
-            remaining_float = snap_lst[snap_count] - cur_time - 1 # time remaining in snap period, used for flash taking snap
-            remaining = snap_lst[snap_count] - cur_time_int - 1 # int of time remaining, used for display
+    def deleteLater(self):
+        self.cap.release()
+        #super(QtGui.QWidget, self).deleteLater()
 
-            if remaining <= 1: # displays remaining time on screen, but last two seconds "SMILE!" is displayed
-                text = "SMILE!"
-            else:
-                text = str(remaining)
-
-            if remaining_float > 0 and remaining_float < .25: # increase image values to make fake flash
-                gray = np.array(np.add(gray,FAUX_FLASH)).astype(np.uint8)
-
-                if take_snap[snap_count]: # check if picture for this snap period needs to be taken, if so...
-
-                    if not os.path.exists(snaps_dir): # make dir for all 4 pictures if it has not been created yet
-                        os.makedirs(snaps_dir)
-                    file_name = os.path.join(snaps_dir,"test_image{0}.tif".format(str(snap_count + 1)))
-                    cv2.imwrite(file_name,gray_copy) # write picture to disk
-                    take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
-
-                    if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
-                        self.capturing = False
-
-                    print("Snap # = {0}".format(str(snap_count + 1)))
-
-            mid_x, mid_y = Capture.findCenter(gray,text,FONT,SCALE,THICKNESS) # find x, y values in image to display text
-            cv2.putText(gray,text,(mid_x,mid_y),FONT,SCALE,(255,255,255),THICKNESS) # insert text at x, y
-            cv2.namedWindow("Image",cv2.cv.CV_WINDOW_NORMAL)
-            cv2.resizeWindow("Image",self.dsp_w,self.dsp_h)
-            #cv2.setWindowProperty("Image", cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
-            cv2.imshow("Image", gray) # display image with text
-            cv2.waitKey(5)
-
-
-
-        cv2.destroyAllWindows() # exit from display window
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QtGui.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     @staticmethod
     def findCenter(array, text, FONT, SCALE, THICKNESS): # values for x, y such that text is centered
-        x = np.size(array[0,:])
-        y = np.size(array[:,0])
+        x = np.shape(array)[1]
+        y = np.shape(array)[0]
 
         half_width = np.int(np.round(cv2.getTextSize(text,FONT,SCALE,THICKNESS)[0][0]/2,0))
         mid_x = np.int(np.round(x/2,0) - half_width)
@@ -111,10 +142,23 @@ class Capture():
         w = np.int(np.shape(array)[1])
         h = np.int(np.shape(array)[0])
         target_w = np.int((h * .75))
-        start  = np.int((w/2) - (target_w/2))
-        end    = np.int((w/2) + (target_w/2))
+        start = np.int((w/2) - (target_w/2))
+        end = np.int((w/2) + (target_w/2))
 
         array = array[:,start:end]
+
+        return array
+
+    @staticmethod
+    def cvt3ChanGray(array):
+        if len(np.shape(array)) == 3:
+            if np.shape(array)[2] == 3:
+                array[:,:,0] = array[:,:,1] = array[:,:,2]
+            else:
+                pass #TODO: Add conditional exit
+
+        else:
+            pass #TODO: Add conditional exit
 
         return array
 
