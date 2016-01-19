@@ -25,10 +25,10 @@ class Capture(QtGui.QWidget):
     def nextFrameSlot(self):
 
         ret, frame = self.cap.read()
-        frame = Capture.cropVideo(frame).astype(np.uint8)
+        #frame = Capture.cropVideo(frame).astype(np.uint8)
         frame = Capture.cvt3ChanGray(frame).astype(np.uint8)
-        frame = cv2.flip(frame, 1).astype(np.uint8) # flips to create mirrior image
-        frame_copy = frame.astype(np.uint8) # unmanipulated copy for writing to disk
+        frame = cv2.flip(frame, 1).astype(np.uint8)  #  flips to create mirrior image
+        frame_copy = frame.astype(np.uint8)  #  unmanipulated copy for writing to disk
         frame = Capture.fullScreen(frame, self.dsp_w, self.dsp_h, self.bkrnd).astype(np.uint8)
 
         FONT = cv2.FONT_HERSHEY_COMPLEX # font
@@ -81,7 +81,7 @@ class Capture(QtGui.QWidget):
 
     def startCapture(self):
         self.fps = 24
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture('/home/pi/Downloads/fgt.mp4') #self.cap = cv2.VideoCapture(0)
 
         self.dsp_w = gtk.gdk.screen_width()
         self.dsp_h = gtk.gdk.screen_height()
@@ -168,18 +168,23 @@ class Capture(QtGui.QWidget):
         w = np.int(np.shape(array)[1])
         h  = np.int(np.shape(array)[0])
 
-        ratio = float(dsp_h) / float(h)
-
-        x_offset = np.int(np.round(np.shape(bkrnd)[1]/2,0)) - np.int(np.round(w/2,0)) - 100
+        if h >= w:
+            ratio = float(dsp_h) / float(h)
+        elif w > h:
+            ratio = float(dsp_w) / float(w)
 
         array = cv2.resize(array, (0, 0), fx = ratio, fy = ratio, interpolation = cv2.INTER_LINEAR)
 
         w  = np.int(np.shape(array)[1])
         h  = np.int(np.shape(array)[0])
 
+        x_offset = np.int(np.round(np.shape(bkrnd)[1]/2,0)) - np.int(np.round(w/2,0))
+        y_offset = np.int(np.round(np.shape(bkrnd)[0]/2,0)) - np.int(np.round(h/2,0))
 
-        bkrnd[0:h, x_offset:x_offset + w] = array
-        array = bkrnd
+        if w < np.shape(bkrnd)[1] and h < np.shape(bkrnd)[0]:
+
+            bkrnd[y_offset:y_offset + h, x_offset:x_offset + w] = array
+            array = bkrnd
 
         return array
 

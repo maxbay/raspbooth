@@ -48,8 +48,8 @@ class saveWindow(QtGui.QWidget):
 
     def initUI(self):
 
-        text, ok = QtGui.QInputDialog.getText(self, 'Email Entry',
-            'Enter your email:')
+        text, ok = QtGui.QInputDialog.getText(self, 'Phone Number Entry',
+            'Enter Your Phone Number (NOTE: Include Area Code):')
 
 
         if ok:
