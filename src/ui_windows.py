@@ -2,14 +2,14 @@
 
 import os
 import sys
-from subprocess import call
 from PyQt4 import QtGui,QtCore
 sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
-from capture import Capture
 
 class startWindow(QtGui.QWidget):
 
     def __init__(self):
+        from capture import Capture
+
         QtGui.QWidget.__init__(self)
 
         self.start()
@@ -25,7 +25,7 @@ class startWindow(QtGui.QWidget):
         self.setLayout(vbox)
         self.setWindowTitle('Control Panel')
         self.setGeometry(100,100,200,200)
-        #self.showFullScreen()
+        self.showFullScreen()
         self.center()
         self.show()
         self.raise_()
@@ -41,11 +41,12 @@ class startWindow(QtGui.QWidget):
         #TODO: Come up with relative path for capture.py
         if not self.cap.capturing:
             self.cap.startCapture()
-            #call(["python",os.path.join("/home/pi/Projects/raspbooth/src","capture.py")])
+
         else:
             print("Currently Capturing")
 
 class saveWindow(QtGui.QWidget):
+
 
     def __init__(self):
         super(saveWindow, self).__init__()
@@ -91,6 +92,11 @@ class saveWindow(QtGui.QWidget):
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+    @staticmethod
+    def makeUsable(txt):
+        pass
+
 
 
 

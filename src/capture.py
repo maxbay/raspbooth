@@ -1,18 +1,16 @@
 
 # import the necessary packages
-
-import sys
 import os
 import time
 import cv2
 import numpy as np
 import picamera.array
 import picamera
-from PyQt4 import QtGui, QtCore
 
 class Capture():
     def __init__(self):
         self.capturing = False
+
         self.dims =  (512,384) #(640, 480) #(1280,960)
         self.camera = picamera.PiCamera()
         self.camera.resolution = self.dims
@@ -80,6 +78,11 @@ class Capture():
                     take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
                     print("Snap # = {0}".format(str(snap_count + 1)))
                     if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
+
+                        from ui_windows import saveWindow
+                        svw = saveWindow()
+
+
                         break
 
 
@@ -96,7 +99,7 @@ class Capture():
 
 
         cv2.destroyAllWindows() # exit from display window
-
+        self.capturing = False
 
     @staticmethod
     def findCenter(array, text, FONT, SCALE, THICKNESS): # values for x, y such that text is centered
@@ -119,19 +122,6 @@ class Capture():
         end = np.int((w/2) + (target_w/2))
 
         array = array[:,start:end]
-
-        return array
-
-    @staticmethod
-    def cvt3ChanGray(array):
-        if len(np.shape(array)) == 3:
-            if np.shape(array)[2] == 3:
-                array[:,:,0] = array[:,:,1] = array[:,:,2]
-            else:
-                pass #TODO: Add conditional exit
-
-        else:
-            pass #TODO: Add conditional exit
 
         return array
 
@@ -160,72 +150,4 @@ class Capture():
             array = bkrnd
 
         return array
-
-
-
-    #startCapture()
-
-
-
-
-
-
-
-
-"""
-# initialize the camera and grab a reference to the raw camera capture
-camera = PiCamera()
-camera.resolution = (640, 480)
-camera.framerate = 32
-rawCapture = PiRGBArray(camera, size=(640, 480))
-
-# allow the camera to warmup
-time.sleep(0.1)
-
-# capture frames from the camera
-for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-	# grab the raw NumPy array representing the image, then initialize the timestamp
-	# and occupied/unoccupied text
-	image = frame.array
-
-	# show the frame
-	cv2.imshow("Frame", image)
-	key = cv2.waitKey(1) & 0xFF
-
-	# clear the stream in preparation for the next frame
-	rawCapture.truncate(0)
-
-	# if the `q` key was pressed, break from the loop
-	if key == ord("q"):
-		break
-
-"""
-
-"""
-# import the necessary packages
-import picamera.array
-import picamera
-import time
-import cv2
-
-# initialize the camera and grab a reference to the raw camera capture
-camera = picamera.PiCamera()
-rawCapture = picamera.array.PiRGBArray(camera)
-
-# allow the camera to warmup
-time.sleep(.1)
-
-
-
-# grab an image from the camera
-camera.capture(rawCapture, format="bgr")
-image = rawCapture.array
-
-# display the image on screen and wait for a keypress
-cv2.imshow("Image", image)
-cv2.waitKey(0)
-rawCapture.truncate(0)
-
-"""
-
 
