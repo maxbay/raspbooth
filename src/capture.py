@@ -8,13 +8,19 @@ import picamera.array
 import picamera
 
 class Capture():
-    def __init__(self):
+    def __init__(self,x,y):
         self.capturing = False
 
+        self.x = x
+        self.y = y
+
         self.dims =  (512,384) #(640, 480) #(1280,960)
+        self.x_coef = float(self.x)/float(self.dims[0])
+        self.y_coef = float(self.y)/float(self.dims[1])
+
         self.camera = picamera.PiCamera()
         self.camera.resolution = self.dims
-        self.camera.framerate = 24
+        self.camera.framerate = 12
         self.camera.hflip = True
         self.capArray = picamera.array.PiRGBArray(self.camera, size=self.dims)
 
@@ -26,11 +32,11 @@ class Capture():
         SCALE = 2 # pt size
         THICKNESS = 5 # boldness factor
 
-        DELAY = 2
+        DELAY = 6
         FAUX_FLASH = 50
         epoch_time = np.int(time.time())
 
-        snap1 = epoch_time + DELAY + 0
+        snap1 = epoch_time + DELAY + 5
         snap2 = snap1 + DELAY
         snap3 = snap2 + DELAY
         snap4 = snap3 + DELAY
@@ -44,12 +50,9 @@ class Capture():
         for image in self.camera.capture_continuous(self.capArray, format="bgr", use_video_port=True):
 
             gray = image.array
-
-            #gray = Capture.cropVideo(gray) # crops video into 3:4 ratio
             gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY) # converts to gray
-            #gray = cv2.flip(gray, 1) # flips to create mirrior image
             gray_copy = gray # unmanipulated copy for writing to disk
-            gray = cv2.resize(gray, (0,0), fx=3.15, fy=3.15)
+            gray = cv2.resize(gray, (0,0), fx=self.x_coef, fy=self.y_coef)
 
             cur_time = time.time() # time of instance, float
             cur_time_int = int(cur_time) # instance of time, discretized
@@ -79,6 +82,9 @@ class Capture():
                     print("Snap # = {0}".format(str(snap_count + 1)))
                     if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
 
+                        self.capArray.truncate(0)
+                        cv2.destroyAllWindows() # exit from display window
+                        self.capturing = False
                         from ui_windows import saveWindow
                         svw = saveWindow()
 
@@ -88,8 +94,6 @@ class Capture():
 
             mid_x, mid_y = Capture.findCenter(gray,text,FONT,SCALE,THICKNESS) # find x, y values in image to display text
             cv2.putText(gray,text,(mid_x,mid_y),FONT,SCALE,(255,255,255),THICKNESS) # insert text at x, y
-            #cv2.namedWindow("Image",cv2.cv.CV_WINDOW_NORMAL)
-            #cv2.setWindowProperty("Image", cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
             cv2.imshow("Image", gray) # display image with text
 
             self.capArray.truncate(0)
@@ -98,8 +102,7 @@ class Capture():
 
 
 
-        cv2.destroyAllWindows() # exit from display window
-        self.capturing = False
+
 
     @staticmethod
     def findCenter(array, text, FONT, SCALE, THICKNESS): # values for x, y such that text is centered

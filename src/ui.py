@@ -4,6 +4,7 @@ import os
 import sys
 from PyQt4 import QtGui,QtCore
 sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
+from capture import Capture
 
 class startWindow(QtGui.QWidget):
 
@@ -16,15 +17,23 @@ class startWindow(QtGui.QWidget):
 
     def start(self):
         self.capturing = False
-        self.cap = Capture()
-        self.start_button = QtGui.QPushButton('Start')
+
+        self.x_display = int(str(QtGui.QDesktopWidget().availableGeometry()).strip("(").strip(")").split(",")[2].strip())
+        self.y_display = int(str(QtGui.QDesktopWidget().availableGeometry()).strip("(").strip(")").split(",")[3].strip())
+
+        self.cap = Capture(self.x_display,self.y_display)
+        self.start_button = QtGui.QPushButton('Press Button To Start')
+        self.start_button.setStyleSheet("font-size:150px;background-color:#FFFFFF; border: 15px solid #222222")
+        self.start_button.setFixedSize(self.x_display-(self.x_display*.01),self.y_display-(self.y_display*.05))
         self.start_button.clicked.connect(self.exeCap)
+
 
         vbox = QtGui.QVBoxLayout(self)
         vbox.addWidget(self.start_button)
         self.setLayout(vbox)
         self.setWindowTitle('Control Panel')
-        self.setGeometry(100,100,200,200)
+        #self.resize(self.x_display-(self.x_display*.01),self.y_display-(self.y_display*.05))
+        self.setWindowFlags(QtCore.Qt.CustomizeWindowHint)
         self.showFullScreen()
         self.center()
         self.show()
