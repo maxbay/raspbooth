@@ -199,7 +199,7 @@ class Capture():
             img_open = cv2.cvtColor(img_open, cv2.COLOR_BGR2GRAY)
             strip[(half_offset * (i+1) + snap_rows * i) : (half_offset * (i+1) + snap_rows * (i+1)), (half_offset) : (half_offset + snap_cols)] = img_open
 
-        cv2.imwrite(strip_full_path,strip)
+        cv2.imwrite(strip_path,strip)
 
 
 
