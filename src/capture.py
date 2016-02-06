@@ -46,6 +46,7 @@ class Capture():
         snap4 = snap3 + DELAY
         snap_lst = [snap1, snap2, snap3, snap4]
         take_snap = [True, True, True, True]
+        img_paths = []
         snap_count = 0
 
         STRIP_NAME = "photostrip.png"
