@@ -1,11 +1,15 @@
 
 # import the necessary packages
 import os
+import sys
 import time
 import cv2
 import numpy as np
 import picamera.array
 import picamera
+
+sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
+from upload import Upload
 
 class Capture():
     def __init__(self,x,y):
@@ -44,8 +48,10 @@ class Capture():
         take_snap = [True, True, True, True]
         snap_count = 0
 
+        STRIP_NAME = "photostrip.png"
         HOME_DIR = os.path.expanduser('~')
         snaps_dir = os.path.join(HOME_DIR,'Desktop/tmp_photos',str(epoch_time))
+        strip_path =os.path.join(snaps_dir,STRIP_NAME)
 
         for image in self.camera.capture_continuous(self.capArray, format="bgr", use_video_port=True):
 
@@ -76,18 +82,23 @@ class Capture():
 
                     if not os.path.exists(snaps_dir): # make dir for all 4 pictures if it has not been created yet
                         os.makedirs(snaps_dir)
-                    file_name = os.path.join(snaps_dir,"test_image{0}.tif".format(str(snap_count + 1)))
+
+                    file_name = os.path.join(snaps_dir,"test_image{0}.png".format(str(snap_count + 1)))
+                    img_paths.append(file_name)
                     cv2.imwrite(file_name,gray_copy) # write picture to disk
                     take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
+
                     print("Snap # = {0}".format(str(snap_count + 1)))
                     if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
 
                         self.capArray.truncate(0)
+                        Capture.stitchImgs(snaps_dir,strip_path)
                         cv2.destroyAllWindows() # exit from display window
                         self.capturing = False
                         from ui_windows import saveWindow
-                        svw = saveWindow()
 
+                        svw = saveWindow()
+                        upld = Upload(strip_path)
 
                         break
 
@@ -153,4 +164,42 @@ class Capture():
             array = bkrnd
 
         return array
+
+    @staticmethod
+    def stitchImgs(img_dir,strip_path):
+
+        if os.path.exists(strip_path):
+            os.remove(strip_path)
+        imgs = ["{0}".format(os.path.join(img_dir,img)) for img in os.listdir(img_dir) if img.endswith(".png") and not img.startswith("~")]
+        n_pics = len(imgs)
+
+        if n_pics == 0:
+            exit(1)
+
+        img_open = cv2.imread(imgs[0])
+        img_open = cv2.cvtColor(img_open, cv2.COLOR_BGR2GRAY)
+
+        shape = np.shape(img_open)
+
+
+        if len(shape) == 2:
+            snap_rows, snap_cols = np.shape(img_open)
+            offset = np.int(np.round(np.multiply(snap_cols,0.05),0))
+            half_offset = np.int(np.round(np.multiply(offset,.5),0))
+        else:
+            exit(1)
+
+
+        strip_rows, strip_cols = ((snap_rows * n_pics) + (half_offset * n_pics - 2)) + offset, (snap_cols + offset)
+
+        strip = np.multiply(np.ones((strip_rows,strip_cols), np.uint8), 255)
+
+        for i,img_path in enumerate(imgs):
+            img_open = cv2.imread(img_path)
+            img_open = cv2.cvtColor(img_open, cv2.COLOR_BGR2GRAY)
+            strip[(half_offset * (i+1) + snap_rows * i) : (half_offset * (i+1) + snap_rows * (i+1)), (half_offset) : (half_offset + snap_cols)] = img_open
+
+        cv2.imwrite(strip_full_path,strip)
+
+
 
