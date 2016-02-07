@@ -17,10 +17,10 @@ class authenticate():
     def auth(self):
         config = ConfigParser.ConfigParser()
         config.read('auth.ini')
-        client_id = config.get('credentials', 'client_id')
-        client_secret = config.get('credentials', 'client_secret')
-        acc_token = config.get('credentials', 'access_token')
-        ref_token = config.get('credentials', 'refresh_token')
+        client_id = config.get('imgur_credentials', 'client_id')
+        client_secret = config.get('imgur_credentials', 'client_secret')
+        acc_token = config.get('imgur_credentials', 'access_token')
+        ref_token = config.get('imgur_credentials', 'refresh_token')
 
 
         self.client = ImgurClient(client_id, client_secret,refresh_token=ref_token)

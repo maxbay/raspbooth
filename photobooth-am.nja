@@ -3,7 +3,7 @@
   "use-tabs": false, 
   "venv": "", 
   "relatedProjects": [], 
-  "name": "PHOTOBOOTH-AM", 
+  "name": "raspbooth", 
   "license": "GNU General Public License v3", 
   "url": "", 
   "pythonPath": "python", 

@@ -12,10 +12,13 @@ class sendText():
 
     def send(self):
         # put your own credentials here
-        ACCOUNT_SID = "AC3f2b66d925a5c2564818587acdcb197e"
-        AUTH_TOKEN = "335daf929a903ef7309962f996c728ce"
+        config = ConfigParser.ConfigParser()
+        config.read('auth.ini')
 
-        ACCOUNT = "+13478686098"
+        ACCOUNT_SID = config.get('twillo_credentials', 'ACCOUNT_SID')
+        AUTH_TOKEN = config.get('twillo_credentials','AUTH_TOKEN')
+        account = config.get('twillo_credentials','ACCOUNT')
+
         ALINE = "+15625878814"
         MAX = "+13152436255"
         SAMSON = "+15012831068"
@@ -24,7 +27,7 @@ class sendText():
 
         client.messages.create(
             to = MAX,
-            from_ = ACCOUNT,
+            from_ = account,
             body ="Hi beebz! Look what I did!",
             media_url = "http://i.imgur.com/N6CT5HF.png",
         )
@@ -34,8 +37,6 @@ class sendText():
         #TODO: Make system for formatting numbers
         pass
 
-if __name__ == "__main__":
-    stxt = sendText('str1','str2')
 
 
 
