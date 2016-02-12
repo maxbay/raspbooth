@@ -1,13 +1,14 @@
 import os
 import sys
+import ConfigParser
 from twilio.rest import TwilioRestClient
 
 class sendText():
 
-    def __init__(self,number,img_path):
+    def __init__(self,img_url,number):
 
+        self.img_url = img_url
         self.number = number
-
         self.send()
 
     def send(self):
@@ -26,18 +27,17 @@ class sendText():
         client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
 
         client.messages.create(
-            to = MAX,
+            to = self.number,
             from_ = account,
             body ="Hi beebz! Look what I did!",
-            media_url = "http://i.imgur.com/N6CT5HF.png",
+            media_url = self.img_url, #"http://i.imgur.com/uhd5uej.png",
         )
-
-    @staticmethod
-    def cleanupNumber(number):
-        #TODO: Make system for formatting numbers
-        pass
+        print("Message sent to: {0}".format(self.number))
 
 
+
+#if __name__ == '__main__':
+#    stxt = sendText('str1','str2')
 
 
 

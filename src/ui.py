@@ -2,9 +2,12 @@
 
 import os
 import sys
+import time
 from PyQt4 import QtGui,QtCore
 sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
 from capture import Capture
+from upload import Upload
+from send_text import sendText
 
 class startWindow(QtGui.QWidget):
 
@@ -57,19 +60,38 @@ class startWindow(QtGui.QWidget):
 class saveWindow(QtGui.QWidget):
 
 
-    def __init__(self):
+    def __init__(self,strip_path):
         super(saveWindow, self).__init__()
+
+        self.strip_path = strip_path
+        self.upld = Upload(self.strip_path)
 
         self.initUI()
 
+
     def initUI(self):
 
-        text, ok = QtGui.QInputDialog.getText(self, 'Phone Number Entry',
+
+        self.number, ok = QtGui.QInputDialog.getText(self, 'Phone Number Entry',
             'Enter Your Phone Number (NOTE: Include Area Code):')
 
-
+        if self.upld.link == None:
+            self.upld.sendToImgur()
         if ok:
-            print(text)
+            while self.upld.link == None:
+
+                time.sleep(.25)
+
+            self.number = saveWindow.makeUsable(str(self.number))
+            self.upld.link = str(self.upld.link)
+
+
+
+            if saveWindow.makeUsable(self.number):
+                self.sdtxt = sendText(self.upld.link,self.number)
+            else:
+                self.initUI
+
 
         """
 
@@ -104,7 +126,26 @@ class saveWindow(QtGui.QWidget):
 
     @staticmethod
     def makeUsable(txt):
-        pass
+        NUMBERS = [str(x) for x in range(10)]
+
+        if len(txt) == 10:
+            txt = "1" + txt
+
+        tmp_txt = ""
+        for i in txt:
+            if i in NUMBERS:
+                tmp_txt += i
+
+        txt = tmp_txt
+        txt = "+" + txt
+
+        return txt
+
+    def checkKosher(txt):
+        kosher = True
+        if len(txt) != 12:
+            kosher = False
+        return kosher
 
 
 

@@ -76,7 +76,7 @@ class Capture():
             else:
                 text = str(remaining)
 
-            if remaining_float > 0 and remaining_float < .25: # increase image values to make fake flash
+            if remaining_float > -1 and remaining_float < .5: # increase image values to make fake flash
                 gray = np.array(np.add(gray,FAUX_FLASH)).astype(np.uint8)
 
                 if take_snap[snap_count]: # check if picture for this snap period needs to be taken, if so...
@@ -87,6 +87,7 @@ class Capture():
                     file_name = os.path.join(snaps_dir,"test_image{0}.png".format(str(snap_count + 1)))
                     img_paths.append(file_name)
                     cv2.imwrite(file_name,gray_copy) # write picture to disk
+                    print(remaining)
                     take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
 
                     print("Snap # = {0}".format(str(snap_count + 1)))
@@ -96,10 +97,9 @@ class Capture():
                         Capture.stitchImgs(snaps_dir,strip_path)
                         cv2.destroyAllWindows() # exit from display window
                         self.capturing = False
-                        from ui_windows import saveWindow
-
-                        svw = saveWindow()
-                        upld = Upload(strip_path)
+                        time.sleep(.5)
+                        from ui import saveWindow
+                        svw = saveWindow(strip_path)
 
                         break
 
