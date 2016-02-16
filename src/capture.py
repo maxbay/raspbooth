@@ -18,7 +18,7 @@ class Capture():
         self.x = x
         self.y = y
 
-        self.dims =  (512,384) #(640, 480) #(1280,960)
+        self.dims =  (512,384) #(512,384) #(640, 480) #(1280,960)
         self.x_coef = float(self.x)/float(self.dims[0])
         self.y_coef = float(self.y)/float(self.dims[1])
 
@@ -52,7 +52,8 @@ class Capture():
         STRIP_NAME = "photostrip.png"
         HOME_DIR = os.path.expanduser('~')
         snaps_dir = os.path.join(HOME_DIR,'Desktop/tmp_photos',str(epoch_time))
-        strip_path =os.path.join(snaps_dir,STRIP_NAME)
+        strip_path = os.path.join(snaps_dir,STRIP_NAME)
+        self.strip_path = strip_path
 
         for image in self.camera.capture_continuous(self.capArray, format="bgr", use_video_port=True):
 
@@ -87,7 +88,6 @@ class Capture():
                     file_name = os.path.join(snaps_dir,"test_image{0}.png".format(str(snap_count + 1)))
                     img_paths.append(file_name)
                     cv2.imwrite(file_name,gray_copy) # write picture to disk
-                    print(remaining)
                     take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
 
                     print("Snap # = {0}".format(str(snap_count + 1)))
@@ -98,23 +98,17 @@ class Capture():
                         cv2.destroyAllWindows() # exit from display window
                         self.capturing = False
                         time.sleep(.5)
-                        from ui import saveWindow
-                        svw = saveWindow(strip_path)
 
                         break
 
 
             mid_x, mid_y = Capture.findCenter(gray,text,FONT,SCALE,THICKNESS) # find x, y values in image to display text
             cv2.putText(gray,text,(mid_x,mid_y),FONT,SCALE,(255,255,255),THICKNESS) # insert text at x, y
-            cv2.imshow("Image", gray) # display image with text
+            cv2.imshow("Video Feed", gray) # display image with text
 
             self.capArray.truncate(0)
 
             cv2.waitKey(5)
-
-
-
-
 
     @staticmethod
     def findCenter(array, text, FONT, SCALE, THICKNESS): # values for x, y such that text is centered
@@ -171,7 +165,7 @@ class Capture():
 
         if os.path.exists(strip_path):
             os.remove(strip_path)
-        imgs = ["{0}".format(os.path.join(img_dir,img)) for img in os.listdir(img_dir) if img.endswith(".png") and not img.startswith("~")]
+        imgs = sorted(["{0}".format(os.path.join(img_dir,img)) for img in os.listdir(img_dir) if img.endswith(".png") and not img.startswith("~")])
         n_pics = len(imgs)
 
         if n_pics == 0:

@@ -12,117 +12,106 @@ from send_text import sendText
 class startWindow(QtGui.QWidget):
 
     def __init__(self):
-        from capture import Capture
-
         QtGui.QWidget.__init__(self)
 
         self.start()
 
     def start(self):
-        self.capturing = False
-
+        #screen dimentions
         self.x_display = int(str(QtGui.QDesktopWidget().availableGeometry()).strip("(").strip(")").split(",")[2].strip())
         self.y_display = int(str(QtGui.QDesktopWidget().availableGeometry()).strip("(").strip(")").split(",")[3].strip())
 
-        self.cap = Capture(self.x_display,self.y_display)
-        self.start_button = QtGui.QPushButton('Press Button To Start')
+        #start button
+        self.start_button = QtGui.QPushButton(self)
+        self.start_button.setText('Press Button To Start')
         self.start_button.setStyleSheet("font-size:150px;background-color:#FFFFFF; border: 15px solid #222222")
-        self.start_button.setFixedSize(self.x_display-(self.x_display*.01),self.y_display-(self.y_display*.05))
+        self.start_button.setFixedSize(self.x_display,self.y_display)
+
+        #give start button powers
+        self.cap = Capture(self.x_display,self.y_display)
         self.start_button.clicked.connect(self.exeCap)
 
-
-        vbox = QtGui.QVBoxLayout(self)
-        vbox.addWidget(self.start_button)
-        self.setLayout(vbox)
-        self.setWindowTitle('Control Panel')
-        #self.resize(self.x_display-(self.x_display*.01),self.y_display-(self.y_display*.05))
-        self.setWindowFlags(QtCore.Qt.CustomizeWindowHint)
+        #size and show size button
         self.showFullScreen()
         self.center()
         self.show()
         self.raise_()
 
 
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QtGui.QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
     def exeCap(self):
-        #TODO: Come up with relative path for capture.py
         if not self.cap.capturing:
             self.cap.startCapture()
+            time.sleep(23)
+            self.deleteLater
+            self.saveInit()
+
 
         else:
             print("Currently Capturing")
 
-class saveWindow(QtGui.QWidget):
 
+    def saveInit(self):
+        QtGui.QDialog.__init__(self)
 
-    def __init__(self,strip_path):
-        super(saveWindow, self).__init__()
-
-        self.strip_path = strip_path
+        self.strip_path = self.cap.strip_path
         self.upld = Upload(self.strip_path)
 
-        self.initUI()
+        self.saveWindow()
 
 
-    def initUI(self):
+    def saveWindow(self):
 
+        #line edit widget
+        self.le = QtGui.QLineEdit(self)
+        self.le.setPlaceholderText("555-555-5555")
+        self.le.setStyleSheet("font-size:150px;background-color:#FFFFFF; border: 5px solid #222222")
+        self.le.setFixedWidth(self.x_display-(self.x_display*.05))
 
-        self.number, ok = QtGui.QInputDialog.getText(self, 'Phone Number Entry',
-            'Enter Your Phone Number (NOTE: Include Area Code):')
+        #button widget
+        self.pb = QtGui.QPushButton(self)
+        self.pb.setText("Press 'Enter' to Submit")
+        self.pb.setStyleSheet("font-size:100px;background-color:#FFFFFF") #; border: 2px solid #222222"
+        self.pb.setFixedWidth(self.x_display-(self.x_display*.05))
 
-        if self.upld.link == None:
-            self.upld.sendToImgur()
-        if ok:
+        #regular expression restrictions
+        reg_ex = QtCore.QRegExp("[0-9_]+")
+        validator = QtGui.QRegExpValidator(reg_ex, self.le)
+        self.le.setValidator(validator)
+
+        #move widgets
+        self.le.move(round(self.x_display*.025,0),(self.y_display*(1.0/3.0)-150))
+        self.pb.move(round(self.x_display*.025,0),(self.y_display*(1.0/3.0)+50))
+
+        #give widgets powers
+        self.connect(self.pb, QtCore.SIGNAL("clicked()"),self.button_click)
+        self.setWindowTitle("Learning")
+        self.showFullScreen()
+        self.raise_()
+        self.show()
+
+    def button_click(self):
+        self.number = startWindow.makeUsable(str(self.le.text()))
+
+        if startWindow.checkKosher(self.number):
+            if self.upld.link == None:
+                self.upld.sendToImgur()
+
             while self.upld.link == None:
-
                 time.sleep(.25)
 
-            self.number = saveWindow.makeUsable(str(self.number))
             self.upld.link = str(self.upld.link)
+            sdtxt = sendText(self.upld.link,self.number)
+            QtCore.QCoreApplication.instance().quit()
 
-
-
-            if saveWindow.makeUsable(self.number):
-                self.sdtxt = sendText(self.upld.link,self.number)
-            else:
-                self.initUI
-
-
-        """
-
-        self.btn = QtGui.QPushButton('Dialog', self)
-        self.btn.move(20, 20)
-        self.btn.clicked.connect(self.showDialog)
-
-        self.le = QtGui.QLineEdit(self)
-        self.le.move(130, 22)
-
-        self.setGeometry(300, 300, 290, 150)
-        self.setWindowTitle('Input dialog')
-        self.center()
-        self.show()
-        self.raise_()
-
-
-    def showDialog(self):
-
-        text, ok = QtGui.QInputDialog.getText(self, 'Input Dialog',
-            'Enter your name:')
-
-        if ok:
-            self.le.setText(str(text))
-    """
+        else:
+            redo = saveWindow(self.strip_path)
 
     def center(self):
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
 
     @staticmethod
     def makeUsable(txt):
@@ -141,12 +130,12 @@ class saveWindow(QtGui.QWidget):
 
         return txt
 
+    @staticmethod
     def checkKosher(txt):
         kosher = True
         if len(txt) != 12:
             kosher = False
         return kosher
-
 
 
 
