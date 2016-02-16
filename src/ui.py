@@ -41,7 +41,7 @@ class startWindow(QtGui.QWidget):
     def exeCap(self):
         if not self.cap.capturing:
             self.cap.startCapture()
-            time.sleep(23)
+            time.sleep(.1)
             self.deleteLater
             self.saveInit()
 
@@ -56,10 +56,10 @@ class startWindow(QtGui.QWidget):
         self.strip_path = self.cap.strip_path
         self.upld = Upload(self.strip_path)
 
-        self.saveWindow()
+        self.save()
 
 
-    def saveWindow(self):
+    def save(self):
 
         #line edit widget
         self.le = QtGui.QLineEdit(self)
@@ -69,7 +69,7 @@ class startWindow(QtGui.QWidget):
 
         #button widget
         self.pb = QtGui.QPushButton(self)
-        self.pb.setText("Press 'Enter' to Submit")
+        self.pb.setText("Press 'Enter to send Picture'")
         self.pb.setStyleSheet("font-size:100px;background-color:#FFFFFF") #; border: 2px solid #222222"
         self.pb.setFixedWidth(self.x_display-(self.x_display*.05))
 
@@ -83,13 +83,13 @@ class startWindow(QtGui.QWidget):
         self.pb.move(round(self.x_display*.025,0),(self.y_display*(1.0/3.0)+50))
 
         #give widgets powers
-        self.connect(self.pb, QtCore.SIGNAL("clicked()"),self.button_click)
+        self.connect(self.pb, QtCore.SIGNAL("clicked()"),self.send)
         self.setWindowTitle("Learning")
         self.showFullScreen()
         self.raise_()
         self.show()
 
-    def button_click(self):
+    def send(self):
         self.number = startWindow.makeUsable(str(self.le.text()))
 
         if startWindow.checkKosher(self.number):
@@ -97,14 +97,17 @@ class startWindow(QtGui.QWidget):
                 self.upld.sendToImgur()
 
             while self.upld.link == None:
-                time.sleep(.25)
+                time.sleep(.05)
 
             self.upld.link = str(self.upld.link)
             sdtxt = sendText(self.upld.link,self.number)
-            QtCore.QCoreApplication.instance().quit()
+            #TODO: change to init start button
+            self.deleteLater()
 
         else:
-            redo = saveWindow(self.strip_path)
+            #TODO: change to remove start button
+            self.deleteLater()
+            self.saveInit()
 
     def center(self):
         qr = self.frameGeometry()
@@ -133,8 +136,9 @@ class startWindow(QtGui.QWidget):
     @staticmethod
     def checkKosher(txt):
         kosher = True
-        if len(txt) != 12:
+        if len(txt) != 12 or not txt.startswith("+1"):
             kosher = False
+
         return kosher
 
 

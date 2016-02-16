@@ -18,7 +18,7 @@ class Capture():
         self.x = x
         self.y = y
 
-        self.dims =  (512,384) #(512,384) #(640, 480) #(1280,960)
+        self.dims =  (512,384) #(640, 480) #(1280,960)
         self.x_coef = float(self.x)/float(self.dims[0])
         self.y_coef = float(self.y)/float(self.dims[1])
 
@@ -77,29 +77,27 @@ class Capture():
             else:
                 text = str(remaining)
 
-            if remaining_float > -1 and remaining_float < .5: # increase image values to make fake flash
-                gray = np.array(np.add(gray,FAUX_FLASH)).astype(np.uint8)
+            if remaining_float > -1 and remaining_float < .5 and take_snap[snap_count]: # increase image values to make fake flash
 
-                if take_snap[snap_count]: # check if picture for this snap period needs to be taken, if so...
+                if not os.path.exists(snaps_dir): # make dir for all 4 pictures if it has not been created yet
+                    os.makedirs(snaps_dir)
 
-                    if not os.path.exists(snaps_dir): # make dir for all 4 pictures if it has not been created yet
-                        os.makedirs(snaps_dir)
+                file_name = os.path.join(snaps_dir,"test_image{0}.png".format(str(snap_count + 1)))
+                img_paths.append(file_name)
+                gray_copy = Capture.cropSnap(gray_copy)
+                cv2.imwrite(file_name,gray_copy) # write picture to disk
+                take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
 
-                    file_name = os.path.join(snaps_dir,"test_image{0}.png".format(str(snap_count + 1)))
-                    img_paths.append(file_name)
-                    cv2.imwrite(file_name,gray_copy) # write picture to disk
-                    take_snap[snap_count] = False #indicate that picture has been taken, and another for this snap period not needed
+                print("Snap # = {0}".format(str(snap_count + 1)))
+                if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
 
-                    print("Snap # = {0}".format(str(snap_count + 1)))
-                    if snap_count == len(snap_lst) - 1: # breaks from while loop if snap count > scheduled snaps
+                    self.capArray.truncate(0)
+                    Capture.stitchImgs(snaps_dir,strip_path)
+                    cv2.destroyAllWindows() # exit from display window
+                    self.capturing = False
+                    time.sleep(.5)
 
-                        self.capArray.truncate(0)
-                        Capture.stitchImgs(snaps_dir,strip_path)
-                        cv2.destroyAllWindows() # exit from display window
-                        self.capturing = False
-                        time.sleep(.5)
-
-                        break
+                    break
 
 
             mid_x, mid_y = Capture.findCenter(gray,text,FONT,SCALE,THICKNESS) # find x, y values in image to display text
@@ -122,11 +120,11 @@ class Capture():
         return mid_x, mid_y # x value, y value
 
     @staticmethod
-    def cropVideo(array): #crops video to 3:4 ratio
+    def cropSnap(array):
 
         w = np.int(np.shape(array)[1])
         h = np.int(np.shape(array)[0])
-        target_w = np.int((h * .75))
+        target_w = np.int(h)
         start = np.int((w/2) - (target_w/2))
         end = np.int((w/2) + (target_w/2))
 
@@ -134,31 +132,6 @@ class Capture():
 
         return array
 
-    @staticmethod
-    def fullScreen(array, dsp_w, dsp_h, bkrnd):
-
-        w = np.int(np.shape(array)[1])
-        h  = np.int(np.shape(array)[0])
-
-        if h >= w:
-            ratio = float(dsp_h) / float(h)
-        elif w > h:
-            ratio = float(dsp_w) / float(w)
-
-        array = cv2.resize(array, (0, 0), fx = ratio, fy = ratio, interpolation = cv2.INTER_LINEAR)
-
-        w  = np.int(np.shape(array)[1])
-        h  = np.int(np.shape(array)[0])
-
-        x_offset = np.int(np.round(np.shape(bkrnd)[1]/2,0)) - np.int(np.round(w/2,0))
-        y_offset = np.int(np.round(np.shape(bkrnd)[0]/2,0)) - np.int(np.round(h/2,0))
-
-        if w < np.shape(bkrnd)[1] and h < np.shape(bkrnd)[0]:
-
-            bkrnd[y_offset:y_offset + h, x_offset:x_offset + w] = array
-            array = bkrnd
-
-        return array
 
     @staticmethod
     def stitchImgs(img_dir,strip_path):
