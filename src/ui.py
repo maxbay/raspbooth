@@ -3,7 +3,7 @@
 import os
 import sys
 import time
-from PyQt4 import QtGui,QtCore
+from PyQt4 import QtGui, QtCore
 sys.path.append(os.path.expanduser("~") + '/Projects/raspbooth/src')
 from capture import Capture
 from upload import Upload
@@ -65,11 +65,11 @@ class startWindow(QtGui.QWidget):
         self.le = QtGui.QLineEdit(self)
         self.le.setPlaceholderText("555-555-5555")
         self.le.setStyleSheet("font-size:150px;background-color:#FFFFFF; border: 5px solid #222222")
+        self.le.setAlignment(QtCore.Qt.AlignCenter)
         self.le.setFixedWidth(self.x_display-(self.x_display*.05))
 
         #button widget
-        self.pb = QtGui.QPushButton(self)
-        self.pb.setText("Press 'Enter to send Picture'")
+        self.pb = QtGui.QPushButton("Press 'Enter' to send Photostrip",self)
         self.pb.setStyleSheet("font-size:100px;background-color:#FFFFFF") #; border: 2px solid #222222"
         self.pb.setFixedWidth(self.x_display-(self.x_display*.05))
 
@@ -102,11 +102,10 @@ class startWindow(QtGui.QWidget):
             self.upld.link = str(self.upld.link)
             sdtxt = sendText(self.upld.link,self.number)
             #TODO: change to init start button
-            self.deleteLater()
+            QtCore.QCoreApplication.instance().quit()
 
         else:
             #TODO: change to remove start button
-            self.deleteLater()
             self.saveInit()
 
     def center(self):

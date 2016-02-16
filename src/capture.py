@@ -36,11 +36,11 @@ class Capture():
         SCALE = 2 # pt size
         THICKNESS = 5 # boldness factor
 
-        DELAY = 6
+        DELAY = 2
         FAUX_FLASH = 50
         epoch_time = np.int(time.time())
 
-        snap1 = epoch_time + DELAY + 5
+        snap1 = epoch_time + DELAY + 0
         snap2 = snap1 + DELAY
         snap3 = snap2 + DELAY
         snap4 = snap3 + DELAY
